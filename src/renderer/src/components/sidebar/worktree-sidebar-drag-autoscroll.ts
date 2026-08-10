@@ -6,6 +6,7 @@ import type {
 } from './worktree-sidebar-drag-geometry'
 
 const EDGE_ZONE_PX = 56
+const ACTIVE_LINEAGE_TARGET_EDGE_ZONE_PX = 12
 const MAX_OUTSIDE_EDGE_PX = 48
 const MAX_SCROLL_SPEED_PX_PER_SECOND = 960
 const MAX_FRAME_MS = 32
@@ -57,6 +58,7 @@ export function getWorktreeSidebarDragAutoscroll(args: {
   scrollHeight: number
   clientHeight: number
   elapsedMs: number
+  lineageTargetActive?: boolean
 }): WorktreeSidebarAutoscrollResult | null {
   const { point, containerRect } = args
   if (point.clientX < containerRect.left || point.clientX > containerRect.right) {
@@ -74,7 +76,11 @@ export function getWorktreeSidebarDragAutoscroll(args: {
     return null
   }
 
-  const edge = getVerticalEdgeIntensity(point.clientY, containerRect)
+  const edge = getVerticalEdgeIntensity(
+    point.clientY,
+    containerRect,
+    args.lineageTargetActive ? ACTIVE_LINEAGE_TARGET_EDGE_ZONE_PX : EDGE_ZONE_PX
+  )
   if (!edge) {
     return null
   }
@@ -204,7 +210,8 @@ export function refreshWorktreeSidebarDragSession(args: {
 
 function getVerticalEdgeIntensity(
   clientY: number,
-  containerRect: Pick<DOMRect, 'top' | 'bottom'>
+  containerRect: Pick<DOMRect, 'top' | 'bottom'>,
+  edgeZonePx: number
 ): { direction: -1 | 1; intensity: number } | null {
   if (clientY < containerRect.top - MAX_OUTSIDE_EDGE_PX) {
     return null
@@ -212,16 +219,16 @@ function getVerticalEdgeIntensity(
   if (clientY > containerRect.bottom + MAX_OUTSIDE_EDGE_PX) {
     return null
   }
-  if (clientY <= containerRect.top + EDGE_ZONE_PX) {
+  if (clientY <= containerRect.top + edgeZonePx) {
     return {
       direction: -1,
-      intensity: Math.min(1, (containerRect.top + EDGE_ZONE_PX - clientY) / EDGE_ZONE_PX)
+      intensity: Math.min(1, (containerRect.top + edgeZonePx - clientY) / edgeZonePx)
     }
   }
-  if (clientY >= containerRect.bottom - EDGE_ZONE_PX) {
+  if (clientY >= containerRect.bottom - edgeZonePx) {
     return {
       direction: 1,
-      intensity: Math.min(1, (clientY - (containerRect.bottom - EDGE_ZONE_PX)) / EDGE_ZONE_PX)
+      intensity: Math.min(1, (clientY - (containerRect.bottom - edgeZonePx)) / edgeZonePx)
     }
   }
   return null
